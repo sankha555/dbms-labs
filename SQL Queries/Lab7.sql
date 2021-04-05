@@ -28,25 +28,19 @@ DELIMITER ;
 +--------------------+ 
 */
 
--- Q2 (somehow returns empty set)
+-- Q2 
 USE sakila;
 DELIMITER $
-CREATE DEFINER=`root`@`localhost` PROCEDURE `cust_staff`(IN stid INT)
-    READS SQL DATA
-    SQL SECURITY INVOKER
+CREATE DEFINER = `root`@`localhost` PROCEDURE sta(IN stid TINYINT)
 BEGIN
-    SELECT * FROM customer
-    WHERE customer_id IN (
-        SELECT c.customer_id
-        FROM customer c NATURAL JOIN payment p 
-        WHERE p.staff_id = stid
+    SELECT first_name, last_name 
+    FROM customer WHERE customer_id IN (
+        SELECT DISTINCT customer_id
+        FROM payment WHERE
+        staff_id = stid
     );
 END$
 DELIMITER ;
-
-/*
-
-*/
 
 -- Q3
 USE university;
