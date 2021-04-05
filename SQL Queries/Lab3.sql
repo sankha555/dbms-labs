@@ -73,5 +73,3 @@ SELECT dept_name, ms1.max_salary FROM (
 
 -- Q2 
 -- Lite, lab test me nhi puchenge (hopefully)
-
-
