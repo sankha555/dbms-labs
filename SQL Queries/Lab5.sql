@@ -49,6 +49,15 @@ SELECT CONCAT(firstname, ' ', lastname) as name
 FROM employees e NATURAL JOIN departments d
 WHERE d.name = 'Consulting';
 
+-- Q2
+SELECT CONCAT(firstname, ' ', lastname) as name
+FROM (
+    SELECT e.employeeid, e.firstname, e.lastname 
+    FROM employees e NATURAL JOIN departments d
+    WHERE d.name = 'Consulting'
+)ec NATURAL JOIN workson w
+WHERE w.projectid = 'ADT4MFIA' AND w.assignedtime > 0.2;
+
 -- Q3
 SELECT CONCAT(firstname, ' ', lastname) as name, SUM(w.assignedtime) 
 FROM employees e NATURAL JOIN workson w 
@@ -123,7 +132,97 @@ SELECT d.code, d.name FROM departments d WHERE
     (SELECT e.employeeid FROM employees e WHERE e.deptcode = d.code)
 );
 
--- Q12 e
+-- Q12 a (Does not return anything since table IT dept doesn't exist lol)
+SELECT CONCAT(firstname, ' ', lastname) as name
+FROM employees e NATURAL JOIN departments d
+WHERE d.name = 'IT';
+
+-- Q12 b (Does not return anything since table IT dept doesn't exist lol)
+SELECT CONCAT(firstname, ' ', lastname) as name
+FROM (
+    SELECT e.employeeid, e.firstname, e.lastname 
+    FROM employees e NATURAL JOIN departments d
+    WHERE d.name = 'IT'
+)ec NATURAL JOIN workson w
+WHERE w.projectid = 'health' AND w.assignedtime > 0.2;
+
+-- Q12 c
+SELECT CONCAT(firstname, ' ', lastname) as name
+FROM employees WHERE salary > (
+    SELECT AVG(salary) FROM employees
+    WHERE deptcode = (
+        SELECT code FROM departments
+        WHERE name = 'Accounting'
+    )
+);
+
+-- Q12 d
+SELECT projectid
+FROM workson 
+WHERE assignedtime > 0.5;
+
+-- Q12 e1 (Does not return anything since employee Bob Smith doesn't exist)
+SELECT SUM(assignedtime) AS total_assigned_time
+FROM workson WHERE
+employeeid = (
+    SELECT employeeid FROM employees
+    WHERE CONCAT(firstname, ' ', lastname) = 'Bob Smith'
+);
+
+-- Q12 e2
 SELECT * FROM departments d
 WHERE NOT EXISTS
 (SELECT * FROM projects p WHERE p.deptcode = d.code);
+
+-- Q12 f
+SELECT * 
+FROM employees
+WHERE salary > ANY(
+    SELECT salary FROM employees
+    WHERE deptcode = (
+        SELECT code FROM departments
+        WHERE name = 'Accounting'
+    )
+);
+
+-- Q12 g
+SELECT * 
+FROM employees
+WHERE salary > ALL(
+    SELECT salary FROM employees
+    WHERE deptcode = (
+        SELECT code FROM departments
+        WHERE name = 'Accounting'
+    )
+);
+
+-- Q12 h -- wrong
+SELECT *
+FROM employees e
+WHERE e.salary > ALL(
+    SELECT salary FROM employees e1
+    WHERE e1.employeeid IS NOT NULL AND e1.employeeid <> e.employeeid
+) AND e.employeeid NOT IN (
+    SELECT employeeid FROM employees e3
+    WHERE deptcode NOT IN (
+        SELECT code FROM departments
+        WHERE name = 'Accounting'
+    )
+);
+
+-- Q12 h -- correct
+SELECT *
+FROM employees e
+WHERE e.employeeid NOT IN (
+    SELECT e1.employeeid FROM employees e1
+    WHERE e1.salary < ANY(
+        SELECT salary FROM employees 
+        WHERE deptcode = (
+            SELECT code FROM departments
+            WHERE name = 'Accounting'
+        ) 
+    )
+) AND e.deptcode = (
+    SELECT code FROM departments
+    WHERE name = 'Accounting'
+);
