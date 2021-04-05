@@ -1,3 +1,4 @@
+-- Examples
 SELECT * FROM
 ingredients WHERE unitprice*inventory > ANY (
     SELECT price FROM items WHERE name LIKE "%Salad%"
@@ -42,6 +43,11 @@ WHERE employeeid = (
     SELECT employeeid FROM employees
     WHERE firstname="Abe" and lastname="Advice"
 )
+
+-- Q1
+SELECT CONCAT(firstname, ' ', lastname) as name
+FROM employees e NATURAL JOIN departments d
+WHERE d.name = 'Consulting';
 
 -- Q3
 SELECT CONCAT(firstname, ' ', lastname) as name, SUM(w.assignedtime) 
