@@ -50,12 +50,12 @@ BEGIN
     SELECT name, ID 
     FROM instructor
     WHERE salary BETWEEN (
-        SELECT AVG(salary)-amt
+        SELECT AVG(salary)
         FROM instructor
-    ) AND (
+    )-amt AND (
         SELECT AVG(salary)+amt
         FROM instructor
-    );
+    )+amt;
 END$
 DELIMITER ;
 
