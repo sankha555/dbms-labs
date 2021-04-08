@@ -97,3 +97,129 @@ WHERE movie_id IN (
     )m2 ON m1.movie_id = m2.movie_id
     WHERE male_votes > female_votes
 );
+
+
+/* from IndiaMotors */
+
+/* SALY ratio */
+SELECT productCode, sales3/sales4 as SALY
+FROM (
+    SELECT productCode, SUM(quantityOrdered*priceEach) as sales3
+    FROM orderdetails o NATURAL JOIN products p
+    WHERE o.orderID IN (
+        SELECT orderID 
+        FROM orders 
+        WHERE YEAR(orderDate) = 2003
+    )
+    GROUP BY productCode
+)s3 NATURAL JOIN (
+    SELECT productCode, SUM(quantityOrdered*priceEach) as sales4
+    FROM orderdetails o NATURAL JOIN products p
+    WHERE o.orderID IN (
+        SELECT orderID 
+        FROM orders 
+        WHERE YEAR(orderDate) = 2004
+    )
+    GROUP BY productCode
+)s4
+GROUP BY productCode;
+
+-- August Value
+SELECT MONTH(o1.orderDate), SUM(quantityOrdered*priceEach) as net_value
+FROM orderdetails o NATURAL JOIN orders o1 
+WHERE YEAR(o1.orderDate) = 2004 AND MONTH(o1.orderDate) = 8;
+
+-- customers per sales rep
+SELECT salesRepEmpID, count(customerID)
+FROM customers
+GROUP BY salesRepEmpID
+ORDER BY count(customerID) DESC;
+
+-- line profitability
+SELECT orderLineNumber, SUM((priceEach - buyPrice)*quantityOrdered) as profitability
+FROM orderdetails o NATURAL JOIN products p
+GROUP BY orderLineNumber;
+
+-- monthly orders
+SELECT MONTH(orderDate) as Month, count(orderID)
+FROM orders 
+WHERE YEAR(orderDate) = 2004
+GROUP BY Month
+ORDER BY Month;
+
+-- percentage payments
+SELECT Month, mamount/(SELECT SUM(amount) FROM payments WHERE YEAR(paymentDate) = 2004) as frac
+FROM (
+    SELECT MONTH(paymentDate) as Month, SUM(amount) as mamount
+    FROM payments
+    WHERE YEAR(paymentDate) = 2004
+    GROUP BY Month 
+)m
+ORDER BY Month;
+
+-- procedure to change price
+DELIMITER $
+CREATE PROCEDURE change_msrp(IN proType VARCHAR(50), IN perc INT)
+BEGIN
+    UPDATE products
+    SET msrp = (1 + 0.01*perc)*msrp 
+    WHERE type = proType;
+END $
+DELIMITER ;
+
+-- orders containing more than two products
+SELECT productCode, orderID, quantityOrdered*priceEach/(
+    SELECT SUM(quantityOrdered*priceEach) 
+    FROM orderdetails o1 
+    WHERE o1.orderID = o.orderID
+) as frac
+FROM orderdetails o
+WHERE orderID IN (
+    SELECT orderID
+    FROM orderdetails 
+    GROUP BY orderID
+    HAVING count(productCode)> 2
+)AND quantityOrdered*priceEach/(
+    SELECT SUM(quantityOrdered*priceEach) 
+    FROM orderdetails o1 
+    WHERE o1.orderID = o.orderID
+) > 0.5;
+
+-- reports to mary
+SELECT employeeID, CONCAT(firstname, ' ', lastname) as name
+FROM employees
+WHERE reportsTo = (
+    SELECT employeeID
+    FROM employees
+    WHERE firstname = 'Mary' AND lastname = 'Patterson'
+);
+
+-- stock on hand ratio  (wrong)
+SELECT orderLineNumber, productCode, quantityInStock/su AS ratio
+FROM orderdetails o1 NATURAL JOIN (
+    SELECT orderLineNumber, SUM(quantityInStock) as su
+    FROM products p NATURAL JOIN orderdetails o 
+    GROUP BY orderLineNumber 
+) 
+ORDER BY orderLineNumber, productCode;
+
+SELECT orderLineNumber, productCode, quantityInStock/su
+FROM products p NATURAL JOIN orderdetails o NATURAL JOIN (
+    SELECT orderLineNumber, SUM(quantityInStock) as su
+    FROM products p1 NATURAL JOIN orderdetails o1 
+    WHERE o1.orderLineNumber = o.orderLineNumber
+)s 
+ORDER BY orderLineNumber, productCode;
+
+-- ratio of customer payments
+SELECT customerID, p3/p4 
+FROM customers c NATURAL JOIN (
+    SELECT SUM(amount) as p3
+    FROM payments p
+    WHERE YEAR(p.paymentDate) = 2003
+)s3 NATURAL JOIN (
+    SELECT SUM(amount) as p4
+    FROM payments p
+    WHERE YEAR(p.paymentDate) = 2004    
+)s4;
+
